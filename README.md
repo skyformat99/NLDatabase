@@ -2,16 +2,16 @@
 
 Lightweight C++ wrapper for SQLite.
 
-# Requirements
+## Requirements
 
  - C++11 compiler
  - SQLite 3
 
-# Usage
+## Usage
 
 Let's open a database file and read some rows:
 
-	#include "NLDatabase.h"
+    #include "NLDatabase.h"
 
 
 	using namespace std;
@@ -29,11 +29,11 @@ Let's open a database file and read some rows:
 	    }
 	}
 
-# Installation
+## Installation
 
 It's a single header, just drop into your project, link sqlite3 and that's it.
 
-# Demo
+## Demo
 
 To run the simple demo, use the Xcode project or build it on the command line like this:
 
@@ -42,7 +42,12 @@ To run the simple demo, use the Xcode project or build it on the command line li
 	./test
 
 
-Known problems
+## Known problems
 
  - There is no error checking. None. Your queries must be perfect. Also, patches are welcome.
  - If you look at the way the results are retrieved, you will realize that you can only iterate through them ONCE. I didn't see an obvious way to express this in code and make it impossible syntactically, so it's simply something you need to keep in mind.
+
+## See also
+
+Goes well with [NLTemplate](https://github.com/catnapgames/NLTemplate) and possibly [Mongoose](https://github.com/cesanta/mongoose).
+
