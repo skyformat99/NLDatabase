@@ -22,10 +22,9 @@ int main(int argc, const char * argv[]) {
     
     auto results = db.query("SELECT * FROM test WHERE name <> ? AND name <> ?", string( "GEORGE" ), "TOM" );
     
-    for ( auto & row : results ) {
+    for ( auto const & row : results ) {
         cout << "column[0]=" << row.column_string( 0 ) << endl;
     }
-    
     
     
     
@@ -36,20 +35,27 @@ int main(int argc, const char * argv[]) {
     
     Query query = db.prepare( "SELECT *, ? FROM test WHERE name=?" );
     
-    for ( auto & row : db.query( query, blob, "TOM" ) ) {
+    for ( auto const & row : db.query( query, blob, "TOM" ) ) {
         cout << "column[0]=" << row.column_string( 0 ) << endl;
         cout << "column[2]=" << row.column_string( 2 ) << endl;
     }
-
     
     
     
     
     // Example 3: Open database, make a query and fetch results in a single line.
     
-    for ( auto & row : Database( path ).query( "SELECT * FROM test ORDER BY ?", "name")) {
+    for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?", "name")) {
         cout << "column[0]=" << row.column_string( 0 ) << endl;
     }
+    
+    
+    
+    
+    // Example 4: Fetch a single row with a result and access it directly without iterating
+    
+    auto const & first = * db.query( "SELECT COUNT(*) FROM test").begin();
+    cout << "COUNT = " << first.column_string( 0 ) << endl;
     
     return 0;
 }

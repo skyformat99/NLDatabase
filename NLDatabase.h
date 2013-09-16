@@ -13,18 +13,18 @@ namespace DB {
     
 
 class Query {
-protected:
-    sqlite3_stmt *stmt;
-    
-    Query( sqlite3_stmt *stmt ) : stmt( stmt ) {
-    }
-    
 public:
     ~Query() {
         sqlite3_finalize( stmt );
     }
     
     friend class Database;
+    
+private:
+    sqlite3_stmt *stmt;
+    
+    Query( sqlite3_stmt *stmt ) : stmt( stmt ) {
+    }
 };
 
 
@@ -54,12 +54,7 @@ public:
 
 
 class Row {
-private:
-    sqlite3_stmt* stmt;
 public:
-    Row( sqlite3_stmt *stmt ) : stmt( stmt ) {
-    }
-    
     std::string column_string( int index ) const {
         return std::string( (char*)sqlite3_column_text( stmt, index ), sqlite3_column_bytes( stmt, index ) );
     }
@@ -74,6 +69,14 @@ public:
     
     TransientBlob column_blob( int index ) const {
         return TransientBlob( sqlite3_column_blob( stmt, index ), sqlite3_column_bytes( stmt, index ) );
+    }
+    
+    friend class Cursor;
+    
+private:
+    sqlite3_stmt* stmt;
+    
+    Row( sqlite3_stmt *stmt ) : stmt( stmt ) {
     }
 };
 
@@ -111,13 +114,6 @@ private:
 
 
 class Results {
-protected:
-    sqlite3_stmt *stmt;
-    bool finalize;
-    
-    Results( sqlite3_stmt *stmt, bool finalize ) : stmt( stmt), finalize( finalize ) {
-    }
-    
 public:
     ~Results() {
         if ( finalize ) {
@@ -128,19 +124,24 @@ public:
     Cursor begin() const {
         return Cursor( stmt, 0 );
     }
-    
-    
+
     Cursor end() const {
         return Cursor( stmt, -1 );
     }
     
+    typedef Cursor const_iterator;
     friend class Database;
+
+private:
+    sqlite3_stmt *stmt;
+    bool finalize;
+    
+    Results( sqlite3_stmt *stmt, bool finalize ) : stmt( stmt), finalize( finalize ) {
+    }
 };
 
 
 class Database {
-private:
-    sqlite3 *db;
 public:
     Database( const std::string & path ) {
         sqlite3_open( path.c_str(), &db );
@@ -183,8 +184,10 @@ public:
         set( stmt, 1, t, args... );
         return Results( stmt, true );
     }
-        
+
 private:
+    sqlite3 *db;
+
     template <typename T>
     void set(sqlite3_stmt *stmt, int index, T value) {
         std::ostringstream stream;
