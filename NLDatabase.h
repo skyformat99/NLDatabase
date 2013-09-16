@@ -15,15 +15,13 @@ namespace DB {
 class Query {
 protected:
     sqlite3_stmt *stmt;
-    bool finalize;
-public:
-    Query( sqlite3_stmt *stmt, bool finalize = true ) : stmt( stmt ), finalize( finalize ) {
+    
+    Query( sqlite3_stmt *stmt ) : stmt( stmt ) {
     }
     
-    virtual ~Query() {
-        if ( finalize ) {
-            sqlite3_finalize( stmt );
-        }
+public:
+    ~Query() {
+        sqlite3_finalize( stmt );
     }
     
     friend class Database;
@@ -112,12 +110,21 @@ private:
 };
 
 
-class Results : public Query {
-public:
-    Results( sqlite3_stmt *stmt, bool finalize ) : Query( stmt, finalize ) {
+class Results {
+protected:
+    sqlite3_stmt *stmt;
+    bool finalize;
+    
+    Results( sqlite3_stmt *stmt, bool finalize ) : stmt( stmt), finalize( finalize ) {
     }
     
-    
+public:
+    ~Results() {
+        if ( finalize ) {
+            sqlite3_finalize( stmt );
+        }
+    }
+
     Cursor begin() const {
         return Cursor( stmt, 0 );
     }
@@ -126,6 +133,8 @@ public:
     Cursor end() const {
         return Cursor( stmt, -1 );
     }
+    
+    friend class Database;
 };
 
 
@@ -133,8 +142,8 @@ class Database {
 private:
     sqlite3 *db;
 public:
-    Database( const char *path ) {
-        sqlite3_open( path, &db );
+    Database( const std::string & path ) {
+        sqlite3_open( path.c_str(), &db );
     }
     
     ~Database() {
