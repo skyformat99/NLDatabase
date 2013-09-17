@@ -70,34 +70,36 @@ public:
     TransientBlob column_blob( int index ) const {
         return TransientBlob( sqlite3_column_blob( stmt, index ), sqlite3_column_bytes( stmt, index ) );
     }
+
+    ~Row() {
+        if ( finalize ) {
+            sqlite3_finalize( stmt );
+        }
+    }
     
     friend class Cursor;
+    friend class Database;
     
 private:
     sqlite3_stmt* stmt;
+    bool finalize;
     
-    Row( sqlite3_stmt *stmt ) : stmt( stmt ) {
+    Row( sqlite3_stmt *stmt, bool finalize = false ) : stmt( stmt ), finalize( finalize ) {
     }
 };
 
 
 class Cursor {
 public:
-    Cursor( sqlite3_stmt *stmt, int pos ) : stmt( stmt ), row( stmt ), pos( pos ) {
-        if ( pos != -1 && sqlite3_step( stmt ) != SQLITE_ROW ) {
-            pos = -1;
-        }
-    }
-    
     bool operator!= ( const Cursor & it ) const {
         return pos != it.pos;
     }
     
-    const Row & operator* () const {
+    const Row & operator* () {
         return row;
     }
     
-    const Cursor & operator++ () {
+    Cursor & operator++ () {
         if ( sqlite3_step( stmt ) == SQLITE_ROW ) {
             pos++;
         } else {
@@ -107,6 +109,14 @@ public:
     }
     
 private:
+    Cursor( sqlite3_stmt *stmt, int pos ) : stmt( stmt ), row( stmt ), pos( pos ) {
+        if ( pos != -1 && sqlite3_step( stmt ) != SQLITE_ROW ) {
+            pos = -1;
+        }
+    }
+
+    friend class Results;
+    
     sqlite3_stmt *stmt;
     Row row;
     int pos;
@@ -184,7 +194,40 @@ public:
         set( stmt, 1, t, args... );
         return Results( stmt, true );
     }
+    
+    Row query_row( Query & query ) {
+        sqlite3_reset( query.stmt );
+        sqlite3_clear_bindings( query.stmt );
+        sqlite3_step( query.stmt );
+        return Row( query.stmt );
+    }
+    
+    template <typename T, typename... Args>
+    Row query_row( Query & query, T t, Args... args ) {
+        sqlite3_reset( query.stmt );
+        sqlite3_clear_bindings( query.stmt );
+        set( query.stmt, 1, t, args... );
+        sqlite3_step( query.stmt );
+        return Row( query.stmt );
+    }
+    
+    Row query_row( const std::string & query ) {
+        sqlite3_stmt *stmt = 0;
+        sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
+        sqlite3_step( stmt );
+        return Row( stmt, true );
+    }
+    
+    template <typename T, typename... Args>
+    Row query_row( const std::string & query, T t, Args... args ) {
+        sqlite3_stmt *stmt = 0;
+        sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
+        set( stmt, 1, t, args... );
+        sqlite3_step( stmt );
+        return Row( stmt, true );
+    }
 
+    
 private:
     sqlite3 *db;
 

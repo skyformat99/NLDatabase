@@ -54,8 +54,8 @@ int main(int argc, const char * argv[]) {
     
     // Example 4: Fetch a single row with a result and access it directly without iterating
     
-    auto const & first = * db.query( "SELECT COUNT(*) FROM test").begin();
-    cout << "COUNT = " << first.column_string( 0 ) << endl;
+    int count = db.query_row( "SELECT COUNT(1) FROM test").column_int( 0 );
+    cout << "COUNT = " << count << endl;
     
     return 0;
 }
