@@ -92,7 +92,7 @@ private:
 class Cursor {
 public:
     bool operator!= ( const Cursor & it ) const {
-        return pos != it.pos;
+        return is_valid != it.is_valid;
     }
     
     const Row & operator* () {
@@ -100,18 +100,16 @@ public:
     }
     
     Cursor & operator++ () {
-        if ( sqlite3_step( stmt ) == SQLITE_ROW ) {
-            pos++;
-        } else {
-            pos = -1;
+        if ( sqlite3_step( stmt ) != SQLITE_ROW ) {
+            is_valid = false;
         }
         return *this;
     }
     
 private:
-    Cursor( sqlite3_stmt *stmt, int pos ) : stmt( stmt ), row( stmt ), pos( pos ) {
-        if ( pos != -1 && sqlite3_step( stmt ) != SQLITE_ROW ) {
-            pos = -1;
+    Cursor( sqlite3_stmt *stmt, bool is_valid ) : stmt( stmt ), row( stmt ), is_valid( is_valid ) {
+        if ( is_valid && sqlite3_step( stmt ) != SQLITE_ROW ) {
+            is_valid = false;
         }
     }
 
@@ -119,7 +117,7 @@ private:
     
     sqlite3_stmt *stmt;
     Row row;
-    int pos;
+    bool is_valid;
 };
 
 
@@ -132,11 +130,11 @@ public:
     }
 
     Cursor begin() const {
-        return Cursor( stmt, 0 );
+        return Cursor( stmt, true );
     }
 
     Cursor end() const {
-        return Cursor( stmt, -1 );
+        return Cursor( stmt, false );
     }
     
     typedef Cursor const_iterator;
