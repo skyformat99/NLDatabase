@@ -165,6 +165,36 @@ public:
         return Query( stmt );
     }
     
+    int changes() const {
+        return sqlite3_changes( db );
+    }
+    
+    long long last_insert_rowid() const {
+        return sqlite3_last_insert_rowid( db );
+    }
+    
+    void begin() {
+        query_single( "BEGIN" );
+    }
+    
+    void commit() {
+        query_single( "COMMIT" );
+    }
+    
+    void rollback() {
+        query_single( "ROLLBACK" );
+    }
+    
+    int version() {
+        return query_single( "PRAGMA user_version").column_int( 0 );
+    }
+    
+    void set_version( const int version ) {
+        std::ostringstream stream;
+        stream << "PRAGMA user_version=" << version;
+        query_single( stream.str() );
+    }
+    
     Results query( Query & query ) {
         sqlite3_reset( query.stmt );
         sqlite3_clear_bindings( query.stmt );
@@ -193,7 +223,7 @@ public:
         return Results( stmt, true );
     }
     
-    Row query_row( Query & query ) {
+    Row query_single( Query & query ) {
         sqlite3_reset( query.stmt );
         sqlite3_clear_bindings( query.stmt );
         sqlite3_step( query.stmt );
@@ -201,7 +231,7 @@ public:
     }
     
     template <typename T, typename... Args>
-    Row query_row( Query & query, T t, Args... args ) {
+    Row query_single( Query & query, T t, Args... args ) {
         sqlite3_reset( query.stmt );
         sqlite3_clear_bindings( query.stmt );
         set( query.stmt, 1, t, args... );
@@ -209,7 +239,7 @@ public:
         return Row( query.stmt );
     }
     
-    Row query_row( const std::string & query ) {
+    Row query_single( const std::string & query ) {
         sqlite3_stmt *stmt = 0;
         sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
         sqlite3_step( stmt );
@@ -217,7 +247,7 @@ public:
     }
     
     template <typename T, typename... Args>
-    Row query_row( const std::string & query, T t, Args... args ) {
+    Row query_single( const std::string & query, T t, Args... args ) {
         sqlite3_stmt *stmt = 0;
         sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
         set( stmt, 1, t, args... );
