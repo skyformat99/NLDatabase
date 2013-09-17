@@ -29,6 +29,8 @@ Let's open a database file and read some rows:
 	    }
 	}
 
+Check out the demo for more examples.
+
 ## Installation
 
 It's a single header, just drop into your project, link sqlite3 and that's it.
