@@ -22,7 +22,7 @@ Let's open a database file and read some rows:
 
 	    Database db( "test.sqlite" );
 	    
-	    auto results = db.query("SELECT * FROM test WHERE name <> ?", "TOM" );
+	    auto results = db.query( "SELECT * FROM test WHERE name <> ?" ).select( "TOM" );
 	    
 	    for ( auto & row : results ) {
 	        cout << "column[0]=" << row.column_string( 0 ) << endl;

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <memory>
 #include <sqlite3.h>
 
 
@@ -11,28 +12,13 @@ namespace NL {
 
 namespace DB {
     
-
-class Query {
-public:
-    ~Query() {
-        sqlite3_finalize( stmt );
-    }
     
-    friend class Database;
-    
-private:
-    sqlite3_stmt *stmt;
-    
-    Query( sqlite3_stmt *stmt ) : stmt( stmt ) {
-    }
-};
-
-
 class Blob {
 public:
     void *data;
     int length;
-    
+
+protected:
     Blob( void *data, int length ) : data( data ), length( length ) {
     }
 };
@@ -52,39 +38,31 @@ public:
 };
 
 
-
 class Row {
 public:
     std::string column_string( int index ) const {
-        return std::string( (char*)sqlite3_column_text( stmt, index ), sqlite3_column_bytes( stmt, index ) );
+        return std::string( (char*)sqlite3_column_text( stmt.get(), index ), sqlite3_column_bytes( stmt.get(), index ) );
     }
     
     int column_int( int index ) const {
-        return sqlite3_column_int( stmt, index );
+        return sqlite3_column_int( stmt.get(), index );
     }
     
     double column_double( int index ) const {
-        return sqlite3_column_double( stmt, index );
+        return sqlite3_column_double( stmt.get(), index );
     }
     
     TransientBlob column_blob( int index ) const {
-        return TransientBlob( sqlite3_column_blob( stmt, index ), sqlite3_column_bytes( stmt, index ) );
+        return TransientBlob( sqlite3_column_blob( stmt.get(), index ), sqlite3_column_bytes( stmt.get(), index ) );
     }
 
-    ~Row() {
-        if ( finalize ) {
-            sqlite3_finalize( stmt );
-        }
-    }
-    
     friend class Cursor;
-    friend class Database;
+    friend class Query;
     
 private:
-    sqlite3_stmt* stmt;
-    bool finalize;
+    std::shared_ptr<struct sqlite3_stmt> stmt;
     
-    Row( sqlite3_stmt *stmt, bool finalize = false ) : stmt( stmt ), finalize( finalize ) {
+    Row( const std::shared_ptr<struct sqlite3_stmt> & stmt ) : stmt( stmt ) {
     }
 };
 
@@ -95,27 +73,27 @@ public:
         return is_valid != it.is_valid;
     }
     
-    const Row & operator* () {
+    const Row & operator* () const {
         return row;
     }
     
     Cursor & operator++ () {
-        if ( sqlite3_step( stmt ) != SQLITE_ROW ) {
+        if ( sqlite3_step( stmt.get() ) != SQLITE_ROW ) {
             is_valid = false;
         }
         return *this;
     }
     
 private:
-    Cursor( sqlite3_stmt *stmt, bool is_valid ) : stmt( stmt ), row( stmt ), is_valid( is_valid ) {
-        if ( is_valid && sqlite3_step( stmt ) != SQLITE_ROW ) {
+    Cursor( const std::shared_ptr<struct sqlite3_stmt> & stmt, bool is_valid ) : stmt( stmt ), row( stmt ), is_valid( is_valid ) {
+        if ( is_valid && sqlite3_step( stmt.get() ) != SQLITE_ROW ) {
             is_valid = false;
         }
     }
 
     friend class Results;
     
-    sqlite3_stmt *stmt;
+    std::shared_ptr<struct sqlite3_stmt> stmt;
     Row row;
     bool is_valid;
 };
@@ -123,32 +101,93 @@ private:
 
 class Results {
 public:
-    ~Results() {
-        if ( finalize ) {
-            sqlite3_finalize( stmt );
-        }
-    }
-
-    Cursor begin() const {
+    const Cursor begin() const {
         return Cursor( stmt, true );
     }
 
-    Cursor end() const {
+    const Cursor end() const {
         return Cursor( stmt, false );
     }
     
     typedef Cursor const_iterator;
-    friend class Database;
+    friend class Query;
 
 private:
-    sqlite3_stmt *stmt;
-    bool finalize;
+    std::shared_ptr<struct sqlite3_stmt> stmt;
     
-    Results( sqlite3_stmt *stmt, bool finalize ) : stmt( stmt), finalize( finalize ) {
+    Results( const std::shared_ptr<struct sqlite3_stmt> & stmt ) : stmt( stmt) {
     }
 };
 
 
+class Query {
+public:
+    Results select() {
+        sqlite3_reset( stmt.get() );
+        sqlite3_clear_bindings( stmt.get() );
+        return Results( stmt );
+    }
+    
+    template <typename T, typename... Args>
+    Results select( T t, Args... args ) {
+        sqlite3_reset( stmt.get() );
+        sqlite3_clear_bindings( stmt.get() );
+        set( stmt.get(), 1, t, args... );
+        return Results( stmt );
+    }
+    
+    Row select_single() {
+        sqlite3_reset( stmt.get() );
+        sqlite3_clear_bindings( stmt.get() );
+        sqlite3_step( stmt.get() );
+        return Row( stmt );
+    }
+    
+    template <typename T, typename... Args>
+    Row select_single( T t, Args... args ) {
+        sqlite3_reset( stmt.get() );
+        sqlite3_clear_bindings( stmt.get() );
+        set( stmt.get(), 1, t, args... );
+        sqlite3_step( stmt.get() );
+        return Row( stmt );
+    }
+    
+    void execute() {
+        sqlite3_step( stmt.get() );
+    }
+    
+    template <typename T, typename... Args>
+    void execute( T t, Args... args ) {
+        sqlite3_reset( stmt.get() );
+        sqlite3_clear_bindings( stmt.get() );
+        set( stmt.get(), 1, t, args... );
+        sqlite3_step( stmt.get() );
+    }
+    
+    friend class Database;
+    
+private:
+    std::shared_ptr<struct sqlite3_stmt> stmt;
+    
+    template <typename T>
+    void set( sqlite3_stmt *stmt, int index, T value) {
+        std::ostringstream stream;
+        stream << value;
+        std::string text( stream.str() );
+        sqlite3_bind_text( stmt, index, text.c_str(), (int)text.length(), SQLITE_TRANSIENT );
+    }
+    
+    template<typename T, typename... Args>
+    void set( sqlite3_stmt *stmt, int index, T value, Args... args) {
+        set( stmt, index, value );
+        set( stmt, index+1, args...);
+    }
+    
+    Query( sqlite3_stmt *stmt ) : stmt( stmt, sqlite3_finalize ) {
+    }
+};
+
+    
 class Database {
 public:
     Database( const std::string & path ) {
@@ -159,7 +198,7 @@ public:
         sqlite3_close( db );
     }
     
-    Query prepare( const std::string & query ) {
+    Query query( const std::string & query ) {
         sqlite3_stmt *stmt = 0;
         sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
         return Query( stmt );
@@ -174,146 +213,70 @@ public:
     }
     
     void begin() {
-        query_single( "BEGIN" );
+        query( "BEGIN").execute();
     }
     
     void commit() {
-        query_single( "COMMIT" );
+        query( "COMMIT" ).execute();
     }
     
     void rollback() {
-        query_single( "ROLLBACK" );
+        query( "ROLLBACK" ).execute();
     }
     
     int version() {
-        return query_single( "PRAGMA user_version").column_int( 0 );
+        return query( "PRAGMA user_version").select_single().column_int( 0 );
     }
     
     void set_version( const int version ) {
         std::ostringstream stream;
         stream << "PRAGMA user_version=" << version;
-        query_single( stream.str() );
+        query( stream.str() ).execute();
     }
-    
-    Results query( Query & query ) {
-        sqlite3_reset( query.stmt );
-        sqlite3_clear_bindings( query.stmt );
-        return Results( query.stmt, false );
-    }
-    
-    template <typename T, typename... Args>
-    Results query( Query & query, T t, Args... args ) {
-        sqlite3_reset( query.stmt );
-        sqlite3_clear_bindings( query.stmt );
-        set( query.stmt, 1, t, args... );
-        return Results( query.stmt, false );
-    }
-    
-    Results query( const std::string & query ) {
-        sqlite3_stmt *stmt = 0;
-        sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
-        return Results( stmt, true );
-    }
-    
-    template <typename T, typename... Args>
-    Results query( const std::string & query, T t, Args... args ) {
-        sqlite3_stmt *stmt = 0;
-        sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
-        set( stmt, 1, t, args... );
-        return Results( stmt, true );
-    }
-    
-    Row query_single( Query & query ) {
-        sqlite3_reset( query.stmt );
-        sqlite3_clear_bindings( query.stmt );
-        sqlite3_step( query.stmt );
-        return Row( query.stmt );
-    }
-    
-    template <typename T, typename... Args>
-    Row query_single( Query & query, T t, Args... args ) {
-        sqlite3_reset( query.stmt );
-        sqlite3_clear_bindings( query.stmt );
-        set( query.stmt, 1, t, args... );
-        sqlite3_step( query.stmt );
-        return Row( query.stmt );
-    }
-    
-    Row query_single( const std::string & query ) {
-        sqlite3_stmt *stmt = 0;
-        sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
-        sqlite3_step( stmt );
-        return Row( stmt, true );
-    }
-    
-    template <typename T, typename... Args>
-    Row query_single( const std::string & query, T t, Args... args ) {
-        sqlite3_stmt *stmt = 0;
-        sqlite3_prepare_v2( db, query.c_str(), (int)query.length(), &stmt, 0 );
-        set( stmt, 1, t, args... );
-        sqlite3_step( stmt );
-        return Row( stmt, true );
-    }
-
     
 private:
     sqlite3 *db;
-
-    template <typename T>
-    void set(sqlite3_stmt *stmt, int index, T value) {
-        std::ostringstream stream;
-        stream << value;
-        std::string text( stream.str() );
-        sqlite3_bind_text( stmt, index, text.c_str(), (int)text.length(), SQLITE_TRANSIENT );
-    }
-    
-    template<typename T, typename... Args>
-    void set(sqlite3_stmt *stmt, int index, T value, Args... args)
-    {
-        set( stmt, index, value );
-        set( stmt, index+1, args...);
-    }
 };
 
 
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, int value) {
+void Query::set(sqlite3_stmt *stmt, int index, int value) {
     sqlite3_bind_int( stmt, index, value );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, double value) {
+void Query::set(sqlite3_stmt *stmt, int index, double value) {
     sqlite3_bind_double( stmt, index, value );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, float value) {
+void Query::set(sqlite3_stmt *stmt, int index, float value) {
     sqlite3_bind_double( stmt, index, (double) value );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, std::string value) {
+void Query::set(sqlite3_stmt *stmt, int index, std::string value) {
     sqlite3_bind_text( stmt, index, value.c_str(), (int) value.length(), SQLITE_TRANSIENT );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, const char * value) {
+void Query::set(sqlite3_stmt *stmt, int index, const char * value) {
     sqlite3_bind_text( stmt, index, value, (int) strlen( value ), SQLITE_TRANSIENT );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, char * value) {
+void Query::set(sqlite3_stmt *stmt, int index, char * value) {
     sqlite3_bind_text( stmt, index, value, (int) strlen( value ), SQLITE_TRANSIENT );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, StaticBlob value) {
+void Query::set(sqlite3_stmt *stmt, int index, StaticBlob value) {
     sqlite3_bind_blob( stmt, index, value.data, value.length, SQLITE_STATIC );
 }
 
 template <>
-void Database::set(sqlite3_stmt *stmt, int index, TransientBlob value) {
+void Query::set(sqlite3_stmt *stmt, int index, TransientBlob value) {
     sqlite3_bind_blob( stmt, index, value.data, value.length, SQLITE_TRANSIENT );
 }
 

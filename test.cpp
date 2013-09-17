@@ -20,7 +20,7 @@ int main(int argc, const char * argv[]) {
     
     // Example 1: simple query with two parameters.
     
-    auto results = db.query("SELECT * FROM test WHERE name <> ? AND name <> ?", string( "GEORGE" ), "TOM" );
+    auto results = db.query("SELECT * FROM test WHERE name <> ? AND name <> ?").select( "GEORGE", "TOM" );
     
     for ( auto const & row : results ) {
         cout << "COLUMN[0]=" << row.column_string( 0 ) << endl;
@@ -29,13 +29,13 @@ int main(int argc, const char * argv[]) {
     
     
     
-    // Example 2: BLOBs of raw data, prepared statement, placing query call directly in for loop
+    // Example 2: BLOBs of raw data, select call directly in for loop
     
     StaticBlob blob( "ABCDEF", 6 );
     
-    Query query = db.prepare( "SELECT *, ? FROM test WHERE name=?" );
+    Query query = db.query( "SELECT *, ? FROM test WHERE name=?" );
     
-    for ( auto const & row : db.query( query, blob, "TOM" ) ) {
+    for ( auto const & row : query.select( blob, "TOM" ) ) {
         cout << "COLUMN[0]=" << row.column_string( 0 ) << endl;
         cout << "COLUMN[2]=" << row.column_string( 2 ) << endl;
     }
@@ -45,7 +45,7 @@ int main(int argc, const char * argv[]) {
     
     // Example 3: Open database, make a query and fetch results in a single line.
     
-    for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?", "name")) {
+    for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?" ).select("name")) {
         cout << "COLUMN[0]=" << row.column_string( 0 ) << endl;
     }
     
@@ -54,7 +54,7 @@ int main(int argc, const char * argv[]) {
     
     // Example 4: Fetch a single row with a result and access it directly without iterating
     
-    int count = db.query_single( "SELECT COUNT(1) FROM test").column_int( 0 );
+    int count = db.query( "SELECT COUNT(1) FROM test").select_single().column_int( 0 );
     cout << "COUNT=" << count << endl;
     
     
@@ -77,19 +77,19 @@ int main(int argc, const char * argv[]) {
     
     db.begin();
     
-    db.query_single( "UPDATE test SET name=? WHERE name=?", "PAUL", "GEORGE");
+    db.query( "UPDATE test SET name=? WHERE name=?").execute("PAUL", "GEORGE");
     
     int num_rows_affected = db.changes();
 
     cout << "AFFECTED " << db.changes() << " ROWS" << endl;
 
     if ( num_rows_affected == 0 ) {
-        db.query_single( "UPDATE test SET name=? WHERE name=?", "GEORGE", "PAUL"); // swap them back
+        db.query( "UPDATE test SET name=? WHERE name=?").execute("GEORGE", "PAUL"); // swap them back
     }
 
     db.commit();
     
-    for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?", "name")) {
+    for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?").select("name")) {
         cout << "COLUMN[0]=" << row.column_string( 0 ) << endl;
     }
 
@@ -99,13 +99,13 @@ int main(int argc, const char * argv[]) {
     
     // Example 5: Get last insert row id
     
-    db.query_single( "INSERT INTO test (name) VALUES(?)", "FRANK" );
+    db.query( "INSERT INTO test (name) VALUES(?)").execute("FRANK");
     
     auto id = db.last_insert_rowid();
     
     cout << "FRANK ID=" << id << endl;
     
-    db.query_single( "DELETE FROM test WHERE name=?", "FRANK" );
+    db.query( "DELETE FROM test WHERE name=?").execute("FRANK" );
 
     
     return 0;
