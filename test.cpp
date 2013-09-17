@@ -73,7 +73,7 @@ int main(int argc, const char * argv[]) {
     
     
     
-    // Example 5: Transactions, getting number of affected rows
+    // Example 6: Transactions, getting number of affected rows
     
     db.begin();
     
@@ -97,7 +97,7 @@ int main(int argc, const char * argv[]) {
     
     
     
-    // Example 5: Get last insert row id
+    // Example 7: Get last insert row id
     
     db.query( "INSERT INTO test (name) VALUES(?)").execute("FRANK");
     
