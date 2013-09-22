@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <vector>
 #include <sqlite3.h>
 
 
@@ -162,6 +163,15 @@ public:
         sqlite3_clear_bindings( stmt.get() );
         set( stmt.get(), 1, t, args... );
         sqlite3_step( stmt.get() );
+    }
+    
+    std::vector<std::string> column_names() const {
+        int count = sqlite3_column_count( stmt.get() );
+        std::vector<std::string> names;
+        for ( int i=0; i < count; i++ ) {
+            names.emplace_back( sqlite3_column_name( stmt.get(), i ) );
+        }
+        return names;
     }
     
     friend class Database;

@@ -29,8 +29,6 @@
 		F831E0B217E63C9200A0088B /* NLDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NLDatabase.h; sourceTree = "<group>"; };
 		F831E0B317E63C9200A0088B /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		F831E0B417E63C9200A0088B /* test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test.cpp; sourceTree = "<group>"; };
-		F831E0B517E63C9200A0088B /* test.sql */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = test.sql; sourceTree = "<group>"; };
-		F831E0B617E63C9200A0088B /* test.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = test.sqlite; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,8 +49,6 @@
 				F831E0B217E63C9200A0088B /* NLDatabase.h */,
 				F831E0B317E63C9200A0088B /* README.md */,
 				F831E0B417E63C9200A0088B /* test.cpp */,
-				F831E0B517E63C9200A0088B /* test.sql */,
-				F831E0B617E63C9200A0088B /* test.sqlite */,
 				F831E0B017E63C8600A0088B /* libsqlite3.dylib */,
 				F831E0A517E63C7500A0088B /* Products */,
 			);
@@ -225,6 +221,7 @@
 				F831E0AF17E63C7500A0088B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
