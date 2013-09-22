@@ -162,8 +162,10 @@ int main(int argc, const char * argv[]) {
 
     // SQLite doesn't have a "get column by name" function, you have to get all names and then find what you need.
     
+    int name_index = find_column_index( "name", names );
+    
     for ( auto const & row : query2.select() ) {
-        cout << tab << "name = " << row.column_string( find_column_index( "name", names ) ) << endl;
+        cout << tab << "name = " << row.column_string( name_index ) << endl;
     }
     
     return 0;
