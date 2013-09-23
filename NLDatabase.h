@@ -88,7 +88,7 @@ public:
 private:
     Cursor( const std::shared_ptr<struct sqlite3_stmt> & stmt, bool is_valid ) : stmt( stmt ), row( stmt ), is_valid( is_valid ) {
         if ( is_valid && sqlite3_step( stmt.get() ) != SQLITE_ROW ) {
-            is_valid = false;
+            this->is_valid = false;
         }
     }
 
