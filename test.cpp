@@ -63,7 +63,7 @@ int main(int argc, const char * argv[]) {
     auto results = db.query("SELECT * FROM test WHERE name <> ? AND name <> ?").select( "GEORGE", "TOM" );
     
     for ( auto const & row : results ) {
-        cout << tab << "COLUMN[0]=" << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
     }
     
     
@@ -76,8 +76,8 @@ int main(int argc, const char * argv[]) {
     Query query = db.query( "SELECT *, ? FROM test WHERE name=?" );
     
     for ( auto const & row : query.select( blob, "TOM" ) ) {
-        cout << tab << "COLUMN[0]=" << row.column_string( 0 ) << endl;
-        cout << tab << "COLUMN[2]=" << row.column_string( 2 ) << endl;
+        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN[2] = " << row.column_string( 2 ) << endl;
     }
     
     
@@ -86,7 +86,7 @@ int main(int argc, const char * argv[]) {
     cout << "Example 3: Open database, make a query and fetch results in a single line" << endl;
     
     for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?" ).select("name")) {
-        cout << tab << "COLUMN[0]=" << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
     }
     
     
@@ -95,7 +95,7 @@ int main(int argc, const char * argv[]) {
     cout << "Example 4: Fetch a single row with a result and access it directly without iterating" << endl;
     
     int count = db.query( "SELECT COUNT(1) FROM test").select_single().column_int( 0 );
-    cout << tab << "COUNT=" << count << endl;
+    cout << tab << "COUNT = " << count << endl;
     
     
     
@@ -104,10 +104,10 @@ int main(int argc, const char * argv[]) {
     cout << "Example 5: Simple support for versioning, which is also used by our simple migration scheme" << endl;
     
     int version = db.version();
-    cout << tab << "VERSION=" << version << endl;
+    cout << tab << "VERSION = " << version << endl;
     
     db.set_version( version + 1 );
-    cout << tab << "VERSION=" << db.version() << endl;
+    cout << tab << "VERSION = " << db.version() << endl;
     
     
     
@@ -130,7 +130,17 @@ int main(int argc, const char * argv[]) {
     db.commit();
     
     for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?").select("name")) {
-        cout << tab << "COLUMN[0]=" << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN AFTER COMMIT[0] =" << row.column_string( 0 ) << endl;
+    }
+
+    db.begin();
+    
+    db.query( "UPDATE test SET name=?").execute("JIM");
+    
+    db.rollback();
+
+    for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?").select("name")) {
+        cout << tab << "COLUMN AFTER ROLLBACK[0] = " << row.column_string( 0 ) << endl;
     }
 
     
