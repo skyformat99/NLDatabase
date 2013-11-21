@@ -51,7 +51,7 @@ To run the simple demo, use the Xcode project or build it on the command line li
 
 ## Personal note
 
-If you use NLDatabase in a project, I'd love to hear about it. Please do let me know at tomovo@gmail.com. Thanks!
+If you use NLDatabase in a project, I'd love to hear about it. Please do let me know at tom@catnapgames.com. Thanks!
 
 ## See also
 
