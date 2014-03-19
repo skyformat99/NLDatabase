@@ -49,6 +49,10 @@ To run the simple demo, use the Xcode project or build it on the command line li
  - There is no error checking. None. Your queries must be perfect.
  - If you look at the way the results are retrieved, you will realize that you can only iterate through them ONCE. I didn't see an obvious way to express this in code and make it impossible syntactically, so it's simply something you need to keep in mind.
 
+## Personal note
+
+If you use NLDatabase in a project, I'd love to hear about it. Please do let me know at tom@catnapgames.com. Thanks!
+
 ## See also
 
 Goes well with [NLTemplate](https://github.com/catnapgames/NLTemplate) and possibly [Mongoose](https://github.com/cesanta/mongoose).
