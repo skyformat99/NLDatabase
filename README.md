@@ -46,7 +46,7 @@ To run the simple demo, use the Xcode project or build it on the command line li
 
 ## Known problems
 
- - There is no error checking. None. Your queries must be perfect. Also, patches are welcome.
+ - There is no error checking. None. Your queries must be perfect.
  - If you look at the way the results are retrieved, you will realize that you can only iterate through them ONCE. I didn't see an obvious way to express this in code and make it impossible syntactically, so it's simply something you need to keep in mind.
 
 ## See also
