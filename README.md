@@ -33,7 +33,7 @@ Check out the demo for more examples.
 
 ## Installation
 
-It's a single header, just drop into your project, link sqlite3 and that's it.
+It's a single source file and a header, just drop into your project, link sqlite3 and that's it.
 
 ## Demo
 
