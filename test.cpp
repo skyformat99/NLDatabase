@@ -94,11 +94,11 @@ int main(int argc, const char * argv[]) {
     
     cout << "Example 4: Fetch a single row with a result and access it directly without iterating" << endl;
     
-    int count = db.query( "SELECT COUNT(1) FROM test").select_single().column_int( 0 );
+    int count = db.query( "SELECT COUNT(1) FROM test").select().single().column_int( 0 );
     cout << tab << "COUNT = " << count << endl;
     
     
-    
+
     
     
     cout << "Example 5: Simple support for versioning, which is also used by our simple migration scheme" << endl;

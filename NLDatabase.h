@@ -59,6 +59,7 @@ public:
 
     friend class Cursor;
     friend class Query;
+    friend class Results;
     
 private:
     std::shared_ptr<struct sqlite3_stmt> stmt;
@@ -110,6 +111,11 @@ public:
         return Cursor( stmt, false );
     }
     
+    Row single() const {
+        sqlite3_step( stmt.get() );
+        return Row( stmt );
+    }
+    
     typedef Cursor const_iterator;
     friend class Query;
 
@@ -135,22 +141,6 @@ public:
         sqlite3_clear_bindings( stmt.get() );
         set( stmt.get(), 1, t, args... );
         return Results( stmt );
-    }
-    
-    Row select_single() {
-        sqlite3_reset( stmt.get() );
-        sqlite3_clear_bindings( stmt.get() );
-        sqlite3_step( stmt.get() );
-        return Row( stmt );
-    }
-    
-    template <typename T, typename... Args>
-    Row select_single( T t, Args... args ) {
-        sqlite3_reset( stmt.get() );
-        sqlite3_clear_bindings( stmt.get() );
-        set( stmt.get(), 1, t, args... );
-        sqlite3_step( stmt.get() );
-        return Row( stmt );
     }
     
     void execute() {
@@ -235,7 +225,7 @@ public:
     }
     
     int version() {
-        return query( "PRAGMA user_version").select_single().column_int( 0 );
+        return query( "PRAGMA user_version").select().single().column_int( 0 );
     }
     
     void set_version( const int version ) {
