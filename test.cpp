@@ -28,9 +28,12 @@ void migrate( Database & db ) {
         case 3:
             db.query( "INSERT INTO test VALUES(?, NULL)" ).execute("GEORGE");
             db.query( "INSERT INTO test VALUES(?, NULL)" ).execute("JOHN");
+        case 4:
+            db.query( "CREATE TABLE blobs (name TEXT, data BLOB)" ).execute();
+            
     }
     
-    db.set_version( 3 ); // set to latest version
+    db.set_version( 4 ); // set to latest version
     db.commit();
 }
 
@@ -177,6 +180,23 @@ int main(int argc, const char * argv[]) {
     for ( auto const & row : query2.select() ) {
         cout << tab << "name = " << row.column_string( name_index ) << endl;
     }
+    
+    
+    
+    
+    
+    cout << "Example 9: BLOBs of raw data, insert and select from table" << endl;
+    
+    StaticBlob binaryblob( "\1\2ABCDEF", 8 );
+
+    db.query( "DELETE FROM blobs" ).execute();
+    db.query( "INSERT INTO blobs (name, data) VALUES (?, ?)" ).execute( "myblob", binaryblob );
+    
+    for ( auto const & row : db.query( "SELECT name, data FROM blobs WHERE name=?" ).select( "myblob" ) ) {
+        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN[2] = " << (char*) row.column_blob( 1 ).data << endl;
+    }
+    
     
     return 0;
 }

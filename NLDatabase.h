@@ -61,10 +61,12 @@ public:
     friend class Query;
     friend class Results;
     
+    const bool is_valid;
+    
 private:
     std::shared_ptr<struct sqlite3_stmt> stmt;
     
-    Row( const std::shared_ptr<struct sqlite3_stmt> & stmt ) : stmt( stmt ) {
+    Row( const std::shared_ptr<struct sqlite3_stmt> & stmt, const bool is_valid ) : stmt( stmt ), is_valid( is_valid ) {
     }
 };
 
@@ -87,7 +89,7 @@ public:
     }
     
 private:
-    Cursor( const std::shared_ptr<struct sqlite3_stmt> & stmt, bool is_valid ) : stmt( stmt ), row( stmt ), is_valid( is_valid ) {
+    Cursor( const std::shared_ptr<struct sqlite3_stmt> & stmt, bool is_valid ) : stmt( stmt ), row( stmt, is_valid ), is_valid( is_valid ) {
         if ( is_valid && sqlite3_step( stmt.get() ) != SQLITE_ROW ) {
             this->is_valid = false;
         }
@@ -112,8 +114,8 @@ public:
     }
     
     Row single() const {
-        sqlite3_step( stmt.get() );
-        return Row( stmt );
+        bool is_valid = sqlite3_step( stmt.get() );
+        return Row( stmt, is_valid );
     }
     
     typedef Cursor const_iterator;
