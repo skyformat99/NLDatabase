@@ -114,7 +114,7 @@ public:
     }
     
     Row single() const {
-        bool is_valid = sqlite3_step( stmt.get() );
+        bool is_valid = sqlite3_step( stmt.get() ) == SQLITE_ROW;
         return Row( stmt, is_valid );
     }
     
