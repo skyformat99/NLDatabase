@@ -25,7 +25,7 @@ Let's open a database file and read some rows:
 	    auto results = db.query( "SELECT * FROM test WHERE name <> ?" ).select( "TOM" );
 	    
 	    for ( auto & row : results ) {
-	        cout << "column[0]=" << row.column_string( 0 ) << endl;
+	        cout << "column[0]=" << row[ 0 ].as_string() << endl;
 	    }
 	}
 

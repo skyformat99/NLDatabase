@@ -8,7 +8,6 @@
 #include <sqlite3.h>
 
 
-
 namespace NL {
 
 namespace DB {
@@ -39,24 +38,44 @@ public:
 };
 
 
+class Value {
+public:
+    std::string as_string() const {
+        return std::string( (char*)sqlite3_column_text( stmt.get(), column ), sqlite3_column_bytes( stmt.get(), column ) );
+    }
+    
+    int as_int() const {
+        return sqlite3_column_int( stmt.get(), column );
+    }
+    
+    long as_long() const {
+        return sqlite3_column_int64( stmt.get(), column );
+    }
+    
+    double as_double() const {
+        return sqlite3_column_double( stmt.get(), column );
+    }
+    
+    TransientBlob as_blob() const {
+        return TransientBlob( sqlite3_column_blob( stmt.get(), column ), sqlite3_column_bytes( stmt.get(), column ) );
+    }
+    
+    friend class Row;
+private:
+    const std::shared_ptr<struct sqlite3_stmt> & stmt;
+    const int column;
+    
+    Value( const std::shared_ptr<struct sqlite3_stmt> & stmt, const int column ) : stmt( stmt ), column( column ) {
+    }
+};
+
+
 class Row {
 public:
-    std::string column_string( int index ) const {
-        return std::string( (char*)sqlite3_column_text( stmt.get(), index ), sqlite3_column_bytes( stmt.get(), index ) );
+    Value operator []( const int index ) const {
+        return Value( stmt, index );
     }
     
-    int column_int( int index ) const {
-        return sqlite3_column_int( stmt.get(), index );
-    }
-    
-    double column_double( int index ) const {
-        return sqlite3_column_double( stmt.get(), index );
-    }
-    
-    TransientBlob column_blob( int index ) const {
-        return TransientBlob( sqlite3_column_blob( stmt.get(), index ), sqlite3_column_bytes( stmt.get(), index ) );
-    }
-
     friend class Cursor;
     friend class Query;
     friend class Results;
@@ -64,7 +83,7 @@ public:
     const bool is_valid;
     
 private:
-    std::shared_ptr<struct sqlite3_stmt> stmt;
+    const std::shared_ptr<struct sqlite3_stmt> stmt;
     
     Row( const std::shared_ptr<struct sqlite3_stmt> & stmt, const bool is_valid ) : stmt( stmt ), is_valid( is_valid ) {
     }
@@ -193,6 +212,13 @@ private:
 class Database {
 public:
     Database( const std::string & path ) {
+        open( path );
+    }
+    
+    Database() {
+    }
+    
+    void open( const std::string & path ) {
         sqlite3_open( path.c_str(), &db );
     }
     
@@ -227,7 +253,7 @@ public:
     }
     
     int version() {
-        return query( "PRAGMA user_version").select().single().column_int( 0 );
+        return query( "PRAGMA user_version").select().single()[ 0 ].as_int();
     }
     
     void set_version( const int version ) {
@@ -240,18 +266,18 @@ private:
     sqlite3 *db;
 };
 
-    
-    template <> void Query::set(sqlite3_stmt *stmt, int index, int value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, double value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, float value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, std::string value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, const char * value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, char * value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, StaticBlob value);
-    template <> void Query::set(sqlite3_stmt *stmt, int index, TransientBlob value);
+
+template <> void Query::set(sqlite3_stmt *stmt, int index, int value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, double value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, float value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, std::string value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, const char * value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, char * value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, StaticBlob value);
+template <> void Query::set(sqlite3_stmt *stmt, int index, TransientBlob value);
 
 } // namespace DB
-
+    
 } // namespace NL
 
 

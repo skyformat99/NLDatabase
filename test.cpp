@@ -66,7 +66,7 @@ int main(int argc, const char * argv[]) {
     auto results = db.query("SELECT * FROM test WHERE name <> ? AND name <> ?").select( "GEORGE", "TOM" );
     
     for ( auto const & row : results ) {
-        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN[0] = " << row[ 0 ].as_string() << endl;
     }
     
     
@@ -79,8 +79,8 @@ int main(int argc, const char * argv[]) {
     Query query = db.query( "SELECT *, ? FROM test WHERE name=?" );
     
     for ( auto const & row : query.select( blob, "TOM" ) ) {
-        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
-        cout << tab << "COLUMN[2] = " << row.column_string( 2 ) << endl;
+        cout << tab << "COLUMN[0] = " << row[ 0 ].as_string() << endl;
+        cout << tab << "COLUMN[2] = " << row[ 2 ].as_string() << endl;
     }
     
     
@@ -89,7 +89,7 @@ int main(int argc, const char * argv[]) {
     cout << "Example 3: Open database, make a query and fetch results in a single line" << endl;
     
     for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?" ).select("name")) {
-        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN[0] = " << row[ 0 ].as_string() << endl;
     }
     
     
@@ -97,7 +97,7 @@ int main(int argc, const char * argv[]) {
     
     cout << "Example 4: Fetch a single row with a result and access it directly without iterating" << endl;
     
-    int count = db.query( "SELECT COUNT(1) FROM test").select().single().column_int( 0 );
+    int count = db.query( "SELECT COUNT(1) FROM test").select().single()[ 0 ].as_int();
     cout << tab << "COUNT = " << count << endl;
     
     
@@ -133,7 +133,7 @@ int main(int argc, const char * argv[]) {
     db.commit();
     
     for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?").select("name")) {
-        cout << tab << "COLUMN AFTER COMMIT[0] =" << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN AFTER COMMIT[0] =" << row[ 0 ].as_string() << endl;
     }
 
     db.begin();
@@ -143,7 +143,7 @@ int main(int argc, const char * argv[]) {
     db.rollback();
 
     for ( auto const & row : Database( path ).query( "SELECT * FROM test ORDER BY ?").select("name")) {
-        cout << tab << "COLUMN AFTER ROLLBACK[0] = " << row.column_string( 0 ) << endl;
+        cout << tab << "COLUMN AFTER ROLLBACK[0] = " << row[ 0 ].as_string() << endl;
     }
 
     
@@ -178,7 +178,7 @@ int main(int argc, const char * argv[]) {
     int name_index = find_column_index( "name", names );
     
     for ( auto const & row : query2.select() ) {
-        cout << tab << "name = " << row.column_string( name_index ) << endl;
+        cout << tab << "name = " << row[ name_index ].as_string() << endl;
     }
     
     
@@ -193,8 +193,8 @@ int main(int argc, const char * argv[]) {
     db.query( "INSERT INTO blobs (name, data) VALUES (?, ?)" ).execute( "myblob", binaryblob );
     
     for ( auto const & row : db.query( "SELECT name, data FROM blobs WHERE name=?" ).select( "myblob" ) ) {
-        cout << tab << "COLUMN[0] = " << row.column_string( 0 ) << endl;
-        cout << tab << "COLUMN[2] = " << (char*) row.column_blob( 1 ).data << endl;
+        cout << tab << "COLUMN[0] = " << row[ 0 ].as_string() << endl;
+        cout << tab << "COLUMN[2] = " << (char*) row[ 1 ].as_blob().data << endl;
     }
     
     
